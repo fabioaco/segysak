@@ -1,7 +1,8 @@
 import sys
 import pytest
+from click.testing import CliRunner
 
-from segysak._cli import main, NAME
+from segysak._cli import cli, NAME
 
 from test_fixtures import temp_dir, temp_segy, TEMP_TEST_DATA_DIR
 
@@ -10,29 +11,24 @@ from test_fixtures import temp_dir, temp_segy, TEMP_TEST_DATA_DIR
 def test_help(help_arg):
     sys.argv = ["", help_arg]
     with pytest.raises(SystemExit):
-        main()
+        cli()
 
 
-def test_vertsion():
-    sys.argv = ["", "-V"]
-    with pytest.raises(SystemExit):
-        main()
+def test_version():
+    runner = CliRunner()
+    result = runner.invoke(cli, ["--version"])
+    assert result.exit_code == 0
+    assert NAME in result.output
 
 
 def test_no_input_file():
     sys.argv = [""]
     with pytest.raises(SystemExit):
-        main()
+        cli()
 
 
-def test_logging_no_spec():
-    sys.argv = ["", "-L"]
-    with pytest.raises(SystemExit):
-        main()
-
-
-@pytest.mark.parametrize("ebc", ["-e", "--ebcidc"])
-def test_dump_ebcidc(temp_dir, temp_segy, ebc):
-    # test_file = temp_dir / "ebcidc_dump.txt"
-    sys.argv = ["", str(temp_segy), ebc]
-    main()
+@pytest.mark.parametrize("cmd", ["scan", "ebcidc", "convert", "scrape"])
+def test_all_subcommands(temp_segy, cmd):
+    runner = CliRunner()
+    result = runner.invoke(cli, [cmd, str(temp_segy)])
+    assert result.exit_code == 0
